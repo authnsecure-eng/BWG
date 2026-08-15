@@ -1,0 +1,317 @@
+{
+  "info": {
+    "name": "PCMC BWG Backend",
+    "description": "Admin login, agency management, survey-officer management, OTP mobile verification and Aadhaar verification for the PCMC BWG backend.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8090" },
+    { "key": "adminToken", "value": "" },
+    { "key": "userToken", "value": "" },
+    { "key": "agencyId", "value": "" },
+    { "key": "userId", "value": "" },
+    { "key": "devOtp", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Admin Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body.token) { pm.collectionVariables.set('adminToken', body.token); }",
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"Admin@12345\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/auth/admin/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "admin", "login"] }
+          }
+        },
+        {
+          "name": "User (Survey Officer) Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body.token) { pm.collectionVariables.set('userToken', body.token); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mobileNo\": \"9123456780\",\n  \"password\": \"Officer@123\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/auth/user/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "user", "login"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Agencies (Admin)",
+      "item": [
+        {
+          "name": "Create Agency",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body.id) { pm.collectionVariables.set('agencyId', body.id); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}" }] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"agencyName\": \"GreenTech Surveyors\",\n  \"agencyCode\": \"AGY001\",\n  \"contactPersonName\": \"Ramesh Kulkarni\",\n  \"mobileNo\": \"9876543210\",\n  \"email\": \"contact@greentech.com\",\n  \"address\": \"123 MG Road, Pune\",\n  \"pinCode\": \"411001\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/admin/agencies", "host": ["{{baseUrl}}"], "path": ["api", "admin", "agencies"] }
+          }
+        },
+        {
+          "name": "List Agencies",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}" }] },
+            "url": { "raw": "{{baseUrl}}/api/admin/agencies", "host": ["{{baseUrl}}"], "path": ["api", "admin", "agencies"] }
+          }
+        },
+        {
+          "name": "Get Agency by Id",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}" }] },
+            "url": { "raw": "{{baseUrl}}/api/admin/agencies/{{agencyId}}", "host": ["{{baseUrl}}"], "path": ["api", "admin", "agencies", "{{agencyId}}"] }
+          }
+        },
+        {
+          "name": "Update Agency",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}" }] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"agencyName\": \"GreenTech Surveyors Pvt Ltd\",\n  \"agencyCode\": \"AGY001\",\n  \"contactPersonName\": \"Ramesh Kulkarni\",\n  \"mobileNo\": \"9876543210\",\n  \"email\": \"contact@greentech.com\",\n  \"address\": \"123 MG Road, Pune\",\n  \"pinCode\": \"411001\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/admin/agencies/{{agencyId}}", "host": ["{{baseUrl}}"], "path": ["api", "admin", "agencies", "{{agencyId}}"] }
+          }
+        },
+        {
+          "name": "Update Agency Status",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}" }] },
+            "body": { "mode": "raw", "raw": "{\n  \"status\": \"INACTIVE\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/admin/agencies/{{agencyId}}/status", "host": ["{{baseUrl}}"], "path": ["api", "admin", "agencies", "{{agencyId}}", "status"] }
+          }
+        },
+        {
+          "name": "Delete Agency",
+          "request": {
+            "method": "DELETE",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}" }] },
+            "url": { "raw": "{{baseUrl}}/api/admin/agencies/{{agencyId}}", "host": ["{{baseUrl}}"], "path": ["api", "admin", "agencies", "{{agencyId}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Users / Survey Officers (Admin)",
+      "item": [
+        {
+          "name": "Create User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body.id) { pm.collectionVariables.set('userId', body.id); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}" }] },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "agencyId", "value": "{{agencyId}}", "type": "text" },
+                { "key": "fullName", "value": "Suresh Patil", "type": "text" },
+                { "key": "mobileNo", "value": "9123456780", "type": "text" },
+                { "key": "email", "value": "suresh.patil@example.com", "type": "text" },
+                { "key": "aadhaarNo", "value": "123456789012", "type": "text" },
+                { "key": "address", "value": "45 FC Road, Pune", "type": "text" },
+                { "key": "pinCode", "value": "411005", "type": "text" },
+                { "key": "password", "value": "Officer@123", "type": "text" },
+                { "key": "photo", "type": "file", "src": [] }
+              ]
+            },
+            "url": { "raw": "{{baseUrl}}/api/admin/users", "host": ["{{baseUrl}}"], "path": ["api", "admin", "users"] }
+          }
+        },
+        {
+          "name": "List Users",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}" }] },
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/users?agencyId={{agencyId}}",
+              "host": ["{{baseUrl}}"], "path": ["api", "admin", "users"],
+              "query": [{ "key": "agencyId", "value": "{{agencyId}}", "disabled": true }]
+            }
+          }
+        },
+        {
+          "name": "Get User by Id",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}" }] },
+            "url": { "raw": "{{baseUrl}}/api/admin/users/{{userId}}", "host": ["{{baseUrl}}"], "path": ["api", "admin", "users", "{{userId}}"] }
+          }
+        },
+        {
+          "name": "Update User",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}" }] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"agencyId\": {{agencyId}},\n  \"fullName\": \"Suresh B. Patil\",\n  \"email\": \"suresh.patil@example.com\",\n  \"address\": \"45 FC Road, Pune\",\n  \"pinCode\": \"411005\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/admin/users/{{userId}}", "host": ["{{baseUrl}}"], "path": ["api", "admin", "users", "{{userId}}"] }
+          }
+        },
+        {
+          "name": "Update User Status",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}" }] },
+            "body": { "mode": "raw", "raw": "{\n  \"status\": \"ACTIVE\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/admin/users/{{userId}}/status", "host": ["{{baseUrl}}"], "path": ["api", "admin", "users", "{{userId}}", "status"] }
+          }
+        },
+        {
+          "name": "Update User Photo",
+          "request": {
+            "method": "POST",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}" }] },
+            "body": {
+              "mode": "formdata",
+              "formdata": [{ "key": "photo", "type": "file", "src": [] }]
+            },
+            "url": { "raw": "{{baseUrl}}/api/admin/users/{{userId}}/photo", "host": ["{{baseUrl}}"], "path": ["api", "admin", "users", "{{userId}}", "photo"] }
+          }
+        },
+        {
+          "name": "Delete User",
+          "request": {
+            "method": "DELETE",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}" }] },
+            "url": { "raw": "{{baseUrl}}/api/admin/users/{{userId}}", "host": ["{{baseUrl}}"], "path": ["api", "admin", "users", "{{userId}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "OTP (Public)",
+      "item": [
+        {
+          "name": "Send OTP",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body.devOtp) { pm.collectionVariables.set('devOtp', body.devOtp); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"mobileNo\": \"9123456780\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/otp/send", "host": ["{{baseUrl}}"], "path": ["api", "otp", "send"] }
+          }
+        },
+        {
+          "name": "Resend OTP",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body.devOtp) { pm.collectionVariables.set('devOtp', body.devOtp); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"mobileNo\": \"9123456780\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/otp/resend", "host": ["{{baseUrl}}"], "path": ["api", "otp", "resend"] }
+          }
+        },
+        {
+          "name": "Verify OTP",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"mobileNo\": \"9123456780\",\n  \"otp\": \"{{devOtp}}\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/otp/verify", "host": ["{{baseUrl}}"], "path": ["api", "otp", "verify"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Onboarding (Public)",
+      "item": [
+        {
+          "name": "Verify Aadhaar",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": {{userId}},\n  \"aadhaarNo\": \"123456789012\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/onboarding/aadhaar/verify", "host": ["{{baseUrl}}"], "path": ["api", "onboarding", "aadhaar", "verify"] }
+          }
+        }
+      ]
+    }
+  ]
+}

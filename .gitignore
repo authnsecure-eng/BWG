@@ -1,0 +1,12 @@
+target/
+logs/
+uploads/
+.classpath
+.project
+.settings/
+.vscode/
+.idea/
+*.iml
+.claude/
+.env
+*.log

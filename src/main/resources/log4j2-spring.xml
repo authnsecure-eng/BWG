@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN" monitorInterval="60">
+
+    <Properties>
+        <Property name="LOG_PATTERN">%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n</Property>
+        <Property name="LOG_DIR">${sys:LOG_PATH:-logs}</Property>
+        <Property name="LOG_ARCHIVE">${LOG_DIR}/archive</Property>
+        <Property name="LOG_MAX_SIZE">${sys:LOG_MAX_FILE_SIZE:-10MB}</Property>
+        <Property name="LOG_RETENTION">${sys:LOG_RETENTION_DAYS:-30}</Property>
+    </Properties>
+
+    <Appenders>
+        <Console name="Console" target="SYSTEM_OUT">
+            <PatternLayout pattern="${LOG_PATTERN}"/>
+        </Console>
+
+        <RollingFile name="FileAppender"
+                     fileName="${LOG_DIR}/bwg-backend.log"
+                     filePattern="${LOG_ARCHIVE}/bwg-backend-%d{yyyy-MM-dd}-%i.log.gz">
+            <PatternLayout pattern="${LOG_PATTERN}"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+                <SizeBasedTriggeringPolicy size="${LOG_MAX_SIZE}"/>
+            </Policies>
+            <DefaultRolloverStrategy max="100">
+                <Delete basePath="${LOG_ARCHIVE}" maxDepth="1">
+                    <IfFileName glob="bwg-backend-*.log.gz"/>
+                    <IfLastModified age="${LOG_RETENTION}d"/>
+                </Delete>
+            </DefaultRolloverStrategy>
+        </RollingFile>
+
+        <RollingFile name="ErrorFileAppender"
+                     fileName="${LOG_DIR}/bwg-backend-error.log"
+                     filePattern="${LOG_ARCHIVE}/bwg-backend-error-%d{yyyy-MM-dd}-%i.log.gz">
+            <PatternLayout pattern="${LOG_PATTERN}"/>
+            <ThresholdFilter level="ERROR" onMatch="ACCEPT" onMismatch="DENY"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+                <SizeBasedTriggeringPolicy size="${LOG_MAX_SIZE}"/>
+            </Policies>
+            <DefaultRolloverStrategy max="100">
+                <Delete basePath="${LOG_ARCHIVE}" maxDepth="1">
+                    <IfFileName glob="bwg-backend-error-*.log.gz"/>
+                    <IfLastModified age="${LOG_RETENTION}d"/>
+                </Delete>
+            </DefaultRolloverStrategy>
+        </RollingFile>
+    </Appenders>
+
+    <Loggers>
+        <!-- Level is overridden by logging.level.com.pcmc.bwg in application.yml / env vars per environment -->
+        <Logger name="com.pcmc.bwg" level="info" additivity="false">
+            <AppenderRef ref="Console"/>
+            <AppenderRef ref="FileAppender"/>
+            <AppenderRef ref="ErrorFileAppender"/>
+        </Logger>
+
+        <Root level="info">
+            <AppenderRef ref="Console"/>
+            <AppenderRef ref="FileAppender"/>
+            <AppenderRef ref="ErrorFileAppender"/>
+        </Root>
+    </Loggers>
+
+</Configuration>

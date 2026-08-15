@@ -1,0 +1,15 @@
+package com.pcmc.bwg.repository;
+
+import com.pcmc.bwg.entity.Agency;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.Optional;
+
+public interface AgencyRepository extends JpaRepository<Agency, Long> {
+
+    Optional<Agency> findByAgencyCode(String agencyCode);
+
+    boolean existsByAgencyName(String agencyName);
+
+    boolean existsByAgencyCode(String agencyCode);
+}
