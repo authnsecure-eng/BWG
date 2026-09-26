@@ -14,17 +14,17 @@ public class UserResponse {
     private String fullName;
     private String mobileNo;
     private String email;
+    private String aadhaarNo;
     private String address;
     private String pinCode;
     private String photoPath;
     private Role role;
     private UserStatus status;
     private boolean mobileVerified;
-    private boolean aadhaarVerified;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
-    public static UserResponse from(AppUser user) {
+    public static UserResponse from(AppUser user, String maskedAadhaarNo) {
         UserResponse dto = new UserResponse();
         dto.id = user.getId();
         dto.agencyId = user.getAgency().getId();
@@ -32,13 +32,13 @@ public class UserResponse {
         dto.fullName = user.getFullName();
         dto.mobileNo = user.getMobileNo();
         dto.email = user.getEmail();
+        dto.aadhaarNo = maskedAadhaarNo;
         dto.address = user.getAddress();
         dto.pinCode = user.getPinCode();
         dto.photoPath = user.getPhotoPath();
         dto.role = user.getRole();
         dto.status = user.getStatus();
         dto.mobileVerified = user.isMobileVerified();
-        dto.aadhaarVerified = user.isAadhaarVerified();
         dto.createdAt = user.getCreatedAt();
         dto.updatedAt = user.getUpdatedAt();
         return dto;
@@ -68,6 +68,10 @@ public class UserResponse {
         return email;
     }
 
+    public String getAadhaarNo() {
+        return aadhaarNo;
+    }
+
     public String getAddress() {
         return address;
     }
@@ -90,10 +94,6 @@ public class UserResponse {
 
     public boolean isMobileVerified() {
         return mobileVerified;
-    }
-
-    public boolean isAadhaarVerified() {
-        return aadhaarVerified;
     }
 
     public LocalDateTime getCreatedAt() {

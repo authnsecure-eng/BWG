@@ -25,6 +25,13 @@ spring:
     enabled: true
     locations: classpath:db/migration
     baseline-on-migrate: true
+    # Allows the new lower-numbered safety-net migrations (V1_1, V3_1 - see
+    # their file comments) to run even though this database may already have
+    # higher-numbered migrations (up to V9) applied. Both are guarded/idempotent
+    # (CREATE TABLE IF NOT EXISTS / existence checks) so they are safe no-ops on
+    # a database that already has bwg_survey, and only actually do work on a
+    # brand-new, empty database.
+    out-of-order: true
 
   servlet:
     multipart:
@@ -51,6 +58,14 @@ app:
   file-storage:
     upload-dir: ${FILE_UPLOAD_DIR:uploads/photos}
     base-url: ${FILE_BASE_URL:/files/photos}
+
+  internal-bridge:
+    # Shared secret the mobile app backend must send as the
+    # X-Internal-Api-Key header when pushing survey data to
+    # /api/internal/surveys/ingest. Generate a real random value for
+    # each environment - do not use the placeholder in production.
+    api-key: ${INTERNAL_BRIDGE_API_KEY:pcmc-bwg-local-dev-bridge-key-2026}
+    enabled: ${INTERNAL_BRIDGE_ENABLED:true}
 
   admin-seed:
     username: ${ADMIN_SEED_USERNAME:admin}

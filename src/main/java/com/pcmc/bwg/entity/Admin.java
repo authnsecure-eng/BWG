@@ -17,6 +17,15 @@ public class Admin extends BaseEntity {
     @Column(name = "full_name", length = 150)
     private String fullName;
 
+    @Column(name = "email", length = 150)
+    private String email;
+
+    @Column(name = "mobile_no", length = 15)
+    private String mobileNo;
+
+    @Column(name = "photo_path", length = 500)
+    private String photoPath;
+
     @Column(name = "active", nullable = false)
     private boolean active = true;
 
@@ -42,6 +51,30 @@ public class Admin extends BaseEntity {
 
     public void setFullName(String fullName) {
         this.fullName = fullName;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public String getMobileNo() {
+        return mobileNo;
+    }
+
+    public void setMobileNo(String mobileNo) {
+        this.mobileNo = mobileNo;
+    }
+
+    public String getPhotoPath() {
+        return photoPath;
+    }
+
+    public void setPhotoPath(String photoPath) {
+        this.photoPath = photoPath;
     }
 
     public boolean isActive() {

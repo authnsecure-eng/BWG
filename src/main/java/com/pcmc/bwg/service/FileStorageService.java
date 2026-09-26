@@ -24,7 +24,9 @@ public class FileStorageService {
     }
 
     public String store(MultipartFile file) {
+        log.info("START store");
         if (file == null || file.isEmpty()) {
+            log.info("SUCCESS store (no file provided)");
             return null;
         }
         String original = file.getOriginalFilename() == null ? "" : file.getOriginalFilename();
@@ -37,11 +39,12 @@ public class FileStorageService {
             Path target = uploadDir.resolve(storedName);
             file.transferTo(target);
         } catch (IOException e) {
-            log.error("Failed to store uploaded photo, storedName: {}", storedName, e);
+            log.error("ERROR store storedName={} - {}", storedName, e.getMessage(), e);
             throw new BadRequestException("Failed to store uploaded photo: " + e.getMessage());
         }
 
         log.debug("Stored uploaded photo as: {}", storedName);
+        log.info("SUCCESS store storedName={}", storedName);
 
         return fileStorageProperties.getBaseUrl() + "/" + storedName;
     }

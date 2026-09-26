@@ -26,74 +26,118 @@ public class AgencyService {
 
     @Transactional
     public Agency create(AgencyRequest request) {
-        if (agencyRepository.existsByAgencyName(request.getAgencyName())) {
-            log.warn("Agency creation rejected, duplicate agencyName: {}", request.getAgencyName());
-            throw new ConflictException("Agency name already exists");
+        log.info("START create agencyCode={}", request.getAgencyCode());
+        try {
+            if (agencyRepository.existsByAgencyName(request.getAgencyName())) {
+                log.warn("Agency creation rejected, duplicate agencyName: {}", request.getAgencyName());
+                throw new ConflictException("Agency name already exists");
+            }
+            if (agencyRepository.existsByAgencyCode(request.getAgencyCode())) {
+                log.warn("Agency creation rejected, duplicate agencyCode: {}", request.getAgencyCode());
+                throw new ConflictException("Agency code already exists");
+            }
+
+            Agency agency = new Agency();
+            applyFields(agency, request);
+            agency.setStatus(AgencyStatus.ACTIVE);
+            agency = agencyRepository.save(agency);
+
+            log.info("Agency created successfully, agencyId: {}, agencyCode: {}", agency.getId(), agency.getAgencyCode());
+            log.info("SUCCESS create agencyId={}", agency.getId());
+
+            return agency;
+        } catch (RuntimeException ex) {
+            log.error("ERROR create agencyCode={} - {}", request.getAgencyCode(), ex.getMessage(), ex);
+            throw ex;
         }
-        if (agencyRepository.existsByAgencyCode(request.getAgencyCode())) {
-            log.warn("Agency creation rejected, duplicate agencyCode: {}", request.getAgencyCode());
-            throw new ConflictException("Agency code already exists");
-        }
-
-        Agency agency = new Agency();
-        applyFields(agency, request);
-        agency.setStatus(AgencyStatus.ACTIVE);
-        agency = agencyRepository.save(agency);
-
-        log.info("Agency created successfully, agencyId: {}, agencyCode: {}", agency.getId(), agency.getAgencyCode());
-
-        return agency;
     }
 
     public List<Agency> findAll() {
-        return agencyRepository.findAll();
+        log.info("START findAll");
+        try {
+            List<Agency> result = agencyRepository.findAll();
+            log.info("SUCCESS findAll count={}", result.size());
+            return result;
+        } catch (RuntimeException ex) {
+            log.error("ERROR findAll - {}", ex.getMessage(), ex);
+            throw ex;
+        }
     }
 
     public Agency findById(Long id) {
-        return agencyRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Agency not found with id " + id));
+        log.info("START findById id={}", id);
+        try {
+            Agency agency = agencyRepository.findById(id)
+                    .orElseThrow(() -> new ResourceNotFoundException("Agency not found with id " + id));
+            log.info("SUCCESS findById id={}", id);
+            return agency;
+        } catch (RuntimeException ex) {
+            log.error("ERROR findById id={} - {}", id, ex.getMessage(), ex);
+            throw ex;
+        }
     }
 
     @Transactional
     public Agency update(Long id, AgencyRequest request) {
-        Agency agency = findById(id);
+        log.info("START update id={}", id);
+        try {
+            Agency agency = findById(id);
 
-        if (!agency.getAgencyName().equals(request.getAgencyName())
-                && agencyRepository.existsByAgencyName(request.getAgencyName())) {
-            log.warn("Agency update rejected, duplicate agencyName: {}", request.getAgencyName());
-            throw new ConflictException("Agency name already exists");
+            if (!agency.getAgencyName().equals(request.getAgencyName())
+                    && agencyRepository.existsByAgencyName(request.getAgencyName())) {
+                log.warn("Agency update rejected, duplicate agencyName: {}", request.getAgencyName());
+                throw new ConflictException("Agency name already exists");
+            }
+            if (!agency.getAgencyCode().equals(request.getAgencyCode())
+                    && agencyRepository.existsByAgencyCode(request.getAgencyCode())) {
+                log.warn("Agency update rejected, duplicate agencyCode: {}", request.getAgencyCode());
+                throw new ConflictException("Agency code already exists");
+            }
+
+            applyFields(agency, request);
+            agency = agencyRepository.save(agency);
+
+            log.info("Agency updated successfully, agencyId: {}", agency.getId());
+            log.info("SUCCESS update id={}", id);
+
+            return agency;
+        } catch (RuntimeException ex) {
+            log.error("ERROR update id={} - {}", id, ex.getMessage(), ex);
+            throw ex;
         }
-        if (!agency.getAgencyCode().equals(request.getAgencyCode())
-                && agencyRepository.existsByAgencyCode(request.getAgencyCode())) {
-            log.warn("Agency update rejected, duplicate agencyCode: {}", request.getAgencyCode());
-            throw new ConflictException("Agency code already exists");
-        }
-
-        applyFields(agency, request);
-        agency = agencyRepository.save(agency);
-
-        log.info("Agency updated successfully, agencyId: {}", agency.getId());
-
-        return agency;
     }
 
     @Transactional
     public Agency updateStatus(Long id, AgencyStatus status) {
-        Agency agency = findById(id);
-        agency.setStatus(status);
-        agency = agencyRepository.save(agency);
+        log.info("START updateStatus id={}", id);
+        try {
+            Agency agency = findById(id);
+            agency.setStatus(status);
+            agency = agencyRepository.save(agency);
 
-        log.info("Agency status updated, agencyId: {}, status: {}", agency.getId(), status);
+            log.info("Agency status updated, agencyId: {}, status: {}", agency.getId(), status);
+            log.info("SUCCESS updateStatus id={}", id);
 
-        return agency;
+            return agency;
+        } catch (RuntimeException ex) {
+            log.error("ERROR updateStatus id={} - {}", id, ex.getMessage(), ex);
+            throw ex;
+        }
     }
 
     @Transactional
     public void delete(Long id) {
-        Agency agency = findById(id);
-        agencyRepository.delete(agency);
+        log.info("START delete id={}", id);
+        try {
+            Agency agency = findById(id);
+            agencyRepository.delete(agency);
 
-        log.info("Agency deleted, agencyId: {}", id);
+            log.info("Agency deleted, agencyId: {}", id);
+            log.info("SUCCESS delete id={}", id);
+        } catch (RuntimeException ex) {
+            log.error("ERROR delete id={} - {}", id, ex.getMessage(), ex);
+            throw ex;
+        }
     }
 
     private void applyFields(Agency agency, AgencyRequest request) {

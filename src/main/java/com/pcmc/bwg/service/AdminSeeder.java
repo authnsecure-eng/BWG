@@ -27,20 +27,29 @@ public class AdminSeeder implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
-        if (!adminSeedProperties.isEnabled()) {
-            return;
-        }
-        if (adminRepository.existsByUsername(adminSeedProperties.getUsername())) {
-            return;
-        }
+        log.info("START run");
+        try {
+            if (!adminSeedProperties.isEnabled()) {
+                log.info("SUCCESS run (seeding disabled)");
+                return;
+            }
+            if (adminRepository.existsByUsername(adminSeedProperties.getUsername())) {
+                log.info("SUCCESS run (admin already exists)");
+                return;
+            }
 
-        Admin admin = new Admin();
-        admin.setUsername(adminSeedProperties.getUsername());
-        admin.setPasswordHash(passwordEncoder.encode(adminSeedProperties.getPassword()));
-        admin.setFullName("Super Admin");
-        admin.setActive(true);
-        adminRepository.save(admin);
+            Admin admin = new Admin();
+            admin.setUsername(adminSeedProperties.getUsername());
+            admin.setPasswordHash(passwordEncoder.encode(adminSeedProperties.getPassword()));
+            admin.setFullName("Super Admin");
+            admin.setActive(true);
+            adminRepository.save(admin);
 
-        log.info("Seeded default admin user '{}'", adminSeedProperties.getUsername());
+            log.info("Seeded default admin user '{}'", adminSeedProperties.getUsername());
+            log.info("SUCCESS run");
+        } catch (RuntimeException ex) {
+            log.error("ERROR run - {}", ex.getMessage(), ex);
+            throw ex;
+        }
     }
 }

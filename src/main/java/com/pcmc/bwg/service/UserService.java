@@ -1,5 +1,6 @@
 package com.pcmc.bwg.service;
 
+import com.pcmc.bwg.dto.user.UserResponse;
 import com.pcmc.bwg.dto.user.UserUpdateRequest;
 import com.pcmc.bwg.entity.Agency;
 import com.pcmc.bwg.entity.AppUser;
@@ -43,133 +44,171 @@ public class UserService {
     @Transactional
     public AppUser create(Long agencyId, String fullName, String mobileNo, String email, String aadhaarNo,
                            String address, String pinCode, String password, MultipartFile photo) {
-        log.info("Creating user for agencyId: {}", agencyId);
+        log.info("START create agencyId={} mobileNo={}", agencyId, mobileNo);
+        try {
+            Agency agency = agencyRepository.findById(agencyId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Agency not found with id " + agencyId));
 
-        Agency agency = agencyRepository.findById(agencyId)
-                .orElseThrow(() -> new ResourceNotFoundException("Agency not found with id " + agencyId));
+            if (appUserRepository.existsByMobileNo(mobileNo)) {
+                log.warn("User creation rejected, duplicate mobileNo for agencyId: {}", agencyId);
+                throw new ConflictException("A user with this mobileNo already exists");
+            }
+            if (appUserRepository.existsByEmail(email)) {
+                log.warn("User creation rejected, duplicate email for agencyId: {}", agencyId);
+                throw new ConflictException("A user with this email already exists");
+            }
 
-        if (appUserRepository.existsByMobileNo(mobileNo)) {
-            log.warn("User creation rejected, duplicate mobileNo for agencyId: {}", agencyId);
-            throw new ConflictException("A user with this mobileNo already exists");
+            String aadhaarHash = aadhaarService.hash(aadhaarNo);
+
+            AppUser user = new AppUser();
+            user.setAgency(agency);
+            user.setFullName(fullName);
+            user.setMobileNo(mobileNo);
+            user.setEmail(email);
+            user.setAadhaarNoEncrypted(aadhaarService.encrypt(aadhaarNo));
+            user.setAadhaarNoHash(aadhaarHash);
+            user.setAddress(address);
+            user.setPinCode(pinCode);
+            user.setPasswordHash(passwordEncoder.encode(password));
+            user.setRole(Role.SURVEY_OFFICER);
+            user.setStatus(UserStatus.INACTIVE);
+            user.setMobileVerified(false);
+            user.setPhotoPath(fileStorageService.store(photo));
+
+            user = appUserRepository.save(user);
+
+            log.info("User created successfully, userId: {}", user.getId());
+            log.info("SUCCESS create agencyId={} userId={}", agencyId, user.getId());
+
+            return user;
+        } catch (RuntimeException ex) {
+            log.error("ERROR create agencyId={} mobileNo={} - {}", agencyId, mobileNo, ex.getMessage(), ex);
+            throw ex;
         }
-        if (appUserRepository.existsByEmail(email)) {
-            log.warn("User creation rejected, duplicate email for agencyId: {}", agencyId);
-            throw new ConflictException("A user with this email already exists");
+    }
+
+    public UserResponse toResponse(AppUser user) {
+        return UserResponse.from(user, maskedAadhaarNo(user));
+    }
+
+    private String maskedAadhaarNo(AppUser user) {
+        String decrypted = aadhaarService.decrypt(user.getAadhaarNoEncrypted());
+        if (decrypted == null || decrypted.length() < 4) {
+            return decrypted;
         }
-
-        String aadhaarHash = aadhaarService.hash(aadhaarNo);
-        if (appUserRepository.existsByAadhaarNoHash(aadhaarHash)) {
-            log.warn("User creation rejected, duplicate Aadhaar number for agencyId: {}", agencyId);
-            throw new ConflictException("A user with this Aadhaar number already exists");
-        }
-
-        AppUser user = new AppUser();
-        user.setAgency(agency);
-        user.setFullName(fullName);
-        user.setMobileNo(mobileNo);
-        user.setEmail(email);
-        user.setAadhaarNoEncrypted(aadhaarService.encrypt(aadhaarNo));
-        user.setAadhaarNoHash(aadhaarHash);
-        user.setAddress(address);
-        user.setPinCode(pinCode);
-        user.setPasswordHash(passwordEncoder.encode(password));
-        user.setRole(Role.SURVEY_OFFICER);
-        user.setStatus(UserStatus.INACTIVE);
-        user.setMobileVerified(false);
-        user.setAadhaarVerified(false);
-        user.setPhotoPath(fileStorageService.store(photo));
-
-        user = appUserRepository.save(user);
-
-        log.info("User created successfully, userId: {}", user.getId());
-
-        return user;
+        return "XXXX XXXX " + decrypted.substring(decrypted.length() - 4);
     }
 
     public List<AppUser> findAll(Long agencyId) {
-        if (agencyId != null) {
-            return appUserRepository.findByAgencyIdFetchAgency(agencyId);
+        log.info("START findAll agencyId={}", agencyId);
+        try {
+            List<AppUser> result = agencyId != null
+                    ? appUserRepository.findByAgencyIdFetchAgency(agencyId)
+                    : appUserRepository.findAllFetchAgency();
+            log.info("SUCCESS findAll agencyId={} count={}", agencyId, result.size());
+            return result;
+        } catch (RuntimeException ex) {
+            log.error("ERROR findAll agencyId={} - {}", agencyId, ex.getMessage(), ex);
+            throw ex;
         }
-        return appUserRepository.findAllFetchAgency();
     }
 
     public AppUser findById(Long id) {
-        return appUserRepository.findByIdFetchAgency(id)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with id " + id));
+        log.info("START findById id={}", id);
+        try {
+            AppUser user = appUserRepository.findByIdFetchAgency(id)
+                    .orElseThrow(() -> new ResourceNotFoundException("User not found with id " + id));
+            log.info("SUCCESS findById id={}", id);
+            return user;
+        } catch (RuntimeException ex) {
+            log.error("ERROR findById id={} - {}", id, ex.getMessage(), ex);
+            throw ex;
+        }
     }
 
     @Transactional
     public AppUser update(Long id, UserUpdateRequest request) {
-        AppUser user = findById(id);
-        Agency agency = agencyRepository.findById(request.getAgencyId())
-                .orElseThrow(() -> new ResourceNotFoundException("Agency not found with id " + request.getAgencyId()));
+        log.info("START update id={}", id);
+        try {
+            AppUser user = findById(id);
+            Agency agency = agencyRepository.findById(request.getAgencyId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Agency not found with id " + request.getAgencyId()));
 
-        if (!user.getEmail().equals(request.getEmail()) && appUserRepository.existsByEmail(request.getEmail())) {
-            log.warn("User update rejected, duplicate email for userId: {}", id);
-            throw new ConflictException("A user with this email already exists");
+            if (!user.getEmail().equals(request.getEmail()) && appUserRepository.existsByEmail(request.getEmail())) {
+                log.warn("User update rejected, duplicate email for userId: {}", id);
+                throw new ConflictException("A user with this email already exists");
+            }
+
+            user.setAgency(agency);
+            user.setFullName(request.getFullName());
+            user.setEmail(request.getEmail());
+            user.setAddress(request.getAddress());
+            user.setPinCode(request.getPinCode());
+            user = appUserRepository.save(user);
+
+            log.info("User updated successfully, userId: {}", user.getId());
+            log.info("SUCCESS update id={}", id);
+
+            return user;
+        } catch (RuntimeException ex) {
+            log.error("ERROR update id={} - {}", id, ex.getMessage(), ex);
+            throw ex;
         }
-
-        user.setAgency(agency);
-        user.setFullName(request.getFullName());
-        user.setEmail(request.getEmail());
-        user.setAddress(request.getAddress());
-        user.setPinCode(request.getPinCode());
-        user = appUserRepository.save(user);
-
-        log.info("User updated successfully, userId: {}", user.getId());
-
-        return user;
     }
 
     @Transactional
     public AppUser updateStatus(Long id, UserStatus status) {
-        AppUser user = findById(id);
-        if (status == UserStatus.ACTIVE && !(user.isMobileVerified() && user.isAadhaarVerified())) {
-            log.warn("User activation rejected, verification incomplete for userId: {}", id);
-            throw new BadRequestException("User must complete mobile and Aadhaar verification before activation");
+        log.info("START updateStatus id={}", id);
+        try {
+            AppUser user = findById(id);
+            if (status == UserStatus.ACTIVE && !user.isMobileVerified()) {
+                log.warn("User activation rejected, verification incomplete for userId: {}", id);
+                throw new BadRequestException("User must complete mobile verification before activation");
+            }
+            user.setStatus(status);
+            user = appUserRepository.save(user);
+
+            log.info("User status updated, userId: {}, status: {}", user.getId(), status);
+            log.info("SUCCESS updateStatus id={}", id);
+
+            return user;
+        } catch (RuntimeException ex) {
+            log.error("ERROR updateStatus id={} - {}", id, ex.getMessage(), ex);
+            throw ex;
         }
-        user.setStatus(status);
-        user = appUserRepository.save(user);
-
-        log.info("User status updated, userId: {}, status: {}", user.getId(), status);
-
-        return user;
     }
 
     @Transactional
     public AppUser updatePhoto(Long id, MultipartFile photo) {
-        AppUser user = findById(id);
-        user.setPhotoPath(fileStorageService.store(photo));
-        user = appUserRepository.save(user);
+        log.info("START updatePhoto id={}", id);
+        try {
+            AppUser user = findById(id);
+            user.setPhotoPath(fileStorageService.store(photo));
+            user = appUserRepository.save(user);
 
-        log.info("User photo updated, userId: {}", user.getId());
+            log.info("User photo updated, userId: {}", user.getId());
+            log.info("SUCCESS updatePhoto id={}", id);
 
-        return user;
+            return user;
+        } catch (RuntimeException ex) {
+            log.error("ERROR updatePhoto id={} - {}", id, ex.getMessage(), ex);
+            throw ex;
+        }
     }
 
     @Transactional
     public void delete(Long id) {
-        AppUser user = findById(id);
-        appUserRepository.delete(user);
+        log.info("START delete id={}", id);
+        try {
+            AppUser user = findById(id);
+            appUserRepository.delete(user);
 
-        log.info("User deleted, userId: {}", id);
+            log.info("User deleted, userId: {}", id);
+            log.info("SUCCESS delete id={}", id);
+        } catch (RuntimeException ex) {
+            log.error("ERROR delete id={} - {}", id, ex.getMessage(), ex);
+            throw ex;
+        }
     }
 
-    @Transactional
-    public void verifyAadhaar(Long id, String aadhaarNo) {
-        AppUser user = findById(id);
-        if (user.isAadhaarVerified()) {
-            log.warn("Aadhaar verification rejected, already verified for userId: {}", id);
-            throw new ConflictException("Aadhaar is already verified");
-        }
-        String hash = aadhaarService.hash(aadhaarNo);
-        if (!hash.equals(user.getAadhaarNoHash())) {
-            log.warn("Aadhaar verification failed, number mismatch for userId: {}", id);
-            throw new BadRequestException("Aadhaar number does not match our records");
-        }
-        user.setAadhaarVerified(true);
-        appUserRepository.save(user);
-
-        log.info("Aadhaar verified successfully for userId: {}", id);
-    }
 }

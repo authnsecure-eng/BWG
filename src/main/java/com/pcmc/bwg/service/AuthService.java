@@ -34,54 +34,68 @@ public class AuthService {
     }
 
     public LoginResponse loginAdmin(String username, String password) {
-        Admin admin = adminRepository.findByUsername(username)
-                .orElseThrow(() -> {
-                    log.warn("Admin login failed, unknown username: {}", username);
-                    return new UnauthorizedException("Invalid username or password");
-                });
+        log.info("START loginAdmin username={}", username);
+        try {
+            Admin admin = adminRepository.findByUsername(username)
+                    .orElseThrow(() -> {
+                        log.warn("Admin login failed, unknown username: {}", username);
+                        return new UnauthorizedException("Invalid username or password");
+                    });
 
-        if (!admin.isActive()) {
-            log.warn("Admin login failed, account inactive for username: {}", username);
-            throw new UnauthorizedException("Admin account is inactive");
+            if (!admin.isActive()) {
+                log.warn("Admin login failed, account inactive for username: {}", username);
+                throw new UnauthorizedException("Admin account is inactive");
+            }
+            if (!passwordEncoder.matches(password, admin.getPasswordHash())) {
+                log.warn("Admin login failed, invalid password for username: {}", username);
+                throw new UnauthorizedException("Invalid username or password");
+            }
+
+            String token = jwtService.generateToken(String.valueOf(admin.getId()),
+                    Map.of("role", "ADMIN", "username", admin.getUsername()));
+
+            log.info("Admin login successful for username: {}, adminId: {}", admin.getUsername(), admin.getId());
+            log.info("SUCCESS loginAdmin username={}", username);
+
+            return new LoginResponse(token, jwtService.getExpirationMinutes(), admin.getId(), admin.getUsername(), "ADMIN");
+        } catch (RuntimeException ex) {
+            log.error("ERROR loginAdmin username={} - {}", username, ex.getMessage(), ex);
+            throw ex;
         }
-        if (!passwordEncoder.matches(password, admin.getPasswordHash())) {
-            log.warn("Admin login failed, invalid password for username: {}", username);
-            throw new UnauthorizedException("Invalid username or password");
-        }
-
-        String token = jwtService.generateToken(String.valueOf(admin.getId()),
-                Map.of("role", "ADMIN", "username", admin.getUsername()));
-
-        log.info("Admin login successful for username: {}, adminId: {}", admin.getUsername(), admin.getId());
-
-        return new LoginResponse(token, jwtService.getExpirationMinutes(), admin.getId(), admin.getUsername(), "ADMIN");
     }
 
     public LoginResponse loginUser(String mobileNo, String password) {
-        AppUser user = appUserRepository.findByMobileNo(mobileNo)
-                .orElseThrow(() -> {
-                    log.warn("User login failed, unknown mobile number");
-                    return new UnauthorizedException("Invalid mobile number or password");
-                });
+        log.info("START loginUser mobileNo={}", mobileNo);
+        try {
+            AppUser user = appUserRepository.findByMobileNo(mobileNo)
+                    .orElseThrow(() -> {
+                        log.warn("User login failed, unknown mobile number");
+                        return new UnauthorizedException("Invalid mobile number or password");
+                    });
 
-        if (!passwordEncoder.matches(password, user.getPasswordHash())) {
-            log.warn("User login failed, invalid password for userId: {}", user.getId());
-            throw new UnauthorizedException("Invalid mobile number or password");
+            if (!passwordEncoder.matches(password, user.getPasswordHash())) {
+                log.warn("User login failed, invalid password for userId: {}", user.getId());
+                throw new UnauthorizedException("Invalid mobile number or password");
+            }
+            if (!user.isMobileVerified()) {
+                log.warn("User login failed, verification incomplete for userId: {}", user.getId());
+                throw new UnauthorizedException("Account verification is not complete yet");
+            }
+            if (user.getStatus() != UserStatus.ACTIVE) {
+                log.warn("User login failed, account not active for userId: {}", user.getId());
+                throw new UnauthorizedException("Account is not active");
+            }
+
+            String token = jwtService.generateToken(String.valueOf(user.getId()),
+                    Map.of("role", "SURVEY_OFFICER", "mobileNo", user.getMobileNo()));
+
+            log.info("User login successful for userId: {}", user.getId());
+            log.info("SUCCESS loginUser mobileNo={}", mobileNo);
+
+            return new LoginResponse(token, jwtService.getExpirationMinutes(), user.getId(), user.getFullName(), "SURVEY_OFFICER");
+        } catch (RuntimeException ex) {
+            log.error("ERROR loginUser mobileNo={} - {}", mobileNo, ex.getMessage(), ex);
+            throw ex;
         }
-        if (!user.isMobileVerified() || !user.isAadhaarVerified()) {
-            log.warn("User login failed, verification incomplete for userId: {}", user.getId());
-            throw new UnauthorizedException("Account verification is not complete yet");
-        }
-        if (user.getStatus() != UserStatus.ACTIVE) {
-            log.warn("User login failed, account not active for userId: {}", user.getId());
-            throw new UnauthorizedException("Account is not active");
-        }
-
-        String token = jwtService.generateToken(String.valueOf(user.getId()),
-                Map.of("role", "SURVEY_OFFICER", "mobileNo", user.getMobileNo()));
-
-        log.info("User login successful for userId: {}", user.getId());
-
-        return new LoginResponse(token, jwtService.getExpirationMinutes(), user.getId(), user.getFullName(), "SURVEY_OFFICER");
     }
 }

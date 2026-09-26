@@ -60,9 +60,6 @@ public class AppUser extends BaseEntity {
     @Column(name = "mobile_verified", nullable = false)
     private boolean mobileVerified = false;
 
-    @Column(name = "aadhaar_verified", nullable = false)
-    private boolean aadhaarVerified = false;
-
     public Agency getAgency() {
         return agency;
     }
@@ -165,13 +162,5 @@ public class AppUser extends BaseEntity {
 
     public void setMobileVerified(boolean mobileVerified) {
         this.mobileVerified = mobileVerified;
-    }
-
-    public boolean isAadhaarVerified() {
-        return aadhaarVerified;
-    }
-
-    public void setAadhaarVerified(boolean aadhaarVerified) {
-        this.aadhaarVerified = aadhaarVerified;
     }
 }

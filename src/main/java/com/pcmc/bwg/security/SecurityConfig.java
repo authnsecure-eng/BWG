@@ -43,7 +43,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/otp/**").permitAll()
-                        .requestMatchers("/api/onboarding/**").permitAll()
+                        .requestMatchers("/api/internal/**").permitAll() // own API-key check inside SurveyIngestController
                         .requestMatchers(filesPattern).permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated()

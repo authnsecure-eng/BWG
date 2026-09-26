@@ -28,6 +28,7 @@ public class AadhaarService {
     }
 
     public String hash(String aadhaarNo) {
+        log.info("START hash");
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             byte[] hashBytes = digest.digest(aadhaarNo.getBytes(StandardCharsets.UTF_8));
@@ -35,14 +36,16 @@ public class AadhaarService {
             for (byte b : hashBytes) {
                 sb.append(String.format("%02x", b));
             }
+            log.info("SUCCESS hash");
             return sb.toString();
         } catch (Exception e) {
-            log.error("Failed to hash Aadhaar number", e);
+            log.error("ERROR hash - {}", e.getMessage(), e);
             throw new IllegalStateException("Unable to hash Aadhaar number", e);
         }
     }
 
     public String encrypt(String aadhaarNo) {
+        log.info("START encrypt");
         try {
             byte[] iv = new byte[IV_LENGTH];
             new SecureRandom().nextBytes(iv);
@@ -53,14 +56,16 @@ public class AadhaarService {
             byte[] combined = new byte[iv.length + encrypted.length];
             System.arraycopy(iv, 0, combined, 0, iv.length);
             System.arraycopy(encrypted, 0, combined, iv.length, encrypted.length);
+            log.info("SUCCESS encrypt");
             return Base64.getEncoder().encodeToString(combined);
         } catch (Exception e) {
-            log.error("Failed to encrypt Aadhaar number", e);
+            log.error("ERROR encrypt - {}", e.getMessage(), e);
             throw new IllegalStateException("Unable to encrypt Aadhaar number", e);
         }
     }
 
     public String decrypt(String cipherTextBase64) {
+        log.info("START decrypt");
         try {
             byte[] combined = Base64.getDecoder().decode(cipherTextBase64);
             byte[] iv = Arrays.copyOfRange(combined, 0, IV_LENGTH);
@@ -68,9 +73,11 @@ public class AadhaarService {
 
             Cipher cipher = Cipher.getInstance(AES_TRANSFORM);
             cipher.init(Cipher.DECRYPT_MODE, keySpec, new IvParameterSpec(iv));
-            return new String(cipher.doFinal(encrypted), StandardCharsets.UTF_8);
+            String result = new String(cipher.doFinal(encrypted), StandardCharsets.UTF_8);
+            log.info("SUCCESS decrypt");
+            return result;
         } catch (Exception e) {
-            log.error("Failed to decrypt Aadhaar number", e);
+            log.error("ERROR decrypt - {}", e.getMessage(), e);
             throw new IllegalStateException("Unable to decrypt Aadhaar number", e);
         }
     }
