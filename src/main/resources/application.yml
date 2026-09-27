@@ -6,7 +6,11 @@ spring:
     name: bwg-backend
 
   datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:5432/pcmc_bwg}
+    # Same env var names/defaults as the mobile backend's application-prod.yml
+    # (BWG_DB_URL / DB_USERNAME / DB_PASSWORD) - both backends share this one
+    # database, so a single set of env vars on the hosting platform correctly
+    # configures both instead of each expecting a differently-named variable.
+    url: ${BWG_DB_URL:jdbc:postgresql://localhost:5432/pcmc_bwg}
     username: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD:root}
     driver-class-name: org.postgresql.Driver
