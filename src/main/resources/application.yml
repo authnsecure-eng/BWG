@@ -12,7 +12,7 @@ spring:
     # configures both instead of each expecting a differently-named variable.
     url: ${BWG_DB_URL:jdbc:postgresql://localhost:5432/pcmc_bwg}
     username: ${DB_USERNAME:postgres}
-    password: ${DB_PASSWORD:root}
+    password: ${DB_PASSWORD:root123}
     driver-class-name: org.postgresql.Driver
 
   jpa:
