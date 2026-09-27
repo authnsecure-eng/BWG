@@ -19,11 +19,15 @@ BEGIN
         JOIN information_schema.key_column_usage kcu
           ON tc.constraint_name = kcu.constraint_name
          AND tc.table_schema = kcu.table_schema
-        WHERE tc.table_name = 'bwg_survey'
+        WHERE tc.table_schema = 'public'
+          AND tc.table_name = 'bwg_survey'
           AND tc.constraint_type = 'FOREIGN KEY'
           AND kcu.column_name = 'zone_id'
+    ) AND EXISTS (
+        SELECT 1 FROM information_schema.tables
+        WHERE table_schema = 'public' AND table_name = 'zones'
     ) THEN
-        ALTER TABLE bwg_survey
-            ADD CONSTRAINT fk_bwg_survey_zone_id FOREIGN KEY (zone_id) REFERENCES zones(id) ON DELETE SET NULL;
+        ALTER TABLE public.bwg_survey
+            ADD CONSTRAINT fk_bwg_survey_zone_id FOREIGN KEY (zone_id) REFERENCES public.zones(id) ON DELETE SET NULL;
     END IF;
 END $$;
